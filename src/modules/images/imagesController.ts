@@ -5,7 +5,22 @@ export const getImagesList = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {};
+) => {
+  const imagesService = ImagesService.getInstance();
+
+  try {
+    const imagesList = imagesService.getImagesList();
+
+    res.json({
+      imagesList,
+    });
+  } catch (err) {
+    res.status(500);
+    res.json({
+      error: err,
+    });
+  }
+};
 
 export const getImage = async (
   req: Request,

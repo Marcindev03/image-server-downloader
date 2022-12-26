@@ -29,27 +29,27 @@ export class ImagesService extends Queue {
     return ImagesService.instance;
   }
 
-  public getImagesList() {}
+  public getImagesList() {
+    return this.images;
+  }
 
   public getImageDetails(imageId: string) {
-    console.log(this.images);
-
     return this.images.find(({ id }) => id === imageId);
   }
 
   public pushImage(url: string) {
     const imageId = Date.now().toString();
 
-    const dir = path.resolve(
-      __dirname,
-      "..",
-      "..",
-      "static",
-      "images",
-      `${imageId}.jpg`
-    );
+    const dir = path.resolve(__dirname, "..", "..", "static", "images");
 
-    this.pushTask(() => downloadImage(url, dir));
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(path.join(__dirname, "..", "..", "static"));
+      fs.mkdirSync(path.join(__dirname, "..", "..", "static", "images"));
+    }
+
+    const filename = path.resolve(dir, `${Date.now()}.jpg`);
+
+    this.pushTask(() => downloadImage(url, filename));
     this.images.push({ id: imageId });
 
     return imageId;
