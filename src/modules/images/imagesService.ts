@@ -2,15 +2,19 @@ import fs from "fs";
 import path from "path";
 import https from "https";
 import { Queue } from "../queue/queue";
+import { Image, ImageInput } from "../../types/image";
 
-const downloadImage = async (url: string, dir: string) => {
+const downloadImage = async (
+  url: string,
+  dir: string,
+  callback: (downloadDate: string) => void
+) => {
   const filePipe = fs.createWriteStream(dir);
 
-  https.get(url, (res) => res.pipe(filePipe));
-};
-
-type Image = {
-  id: string;
+  https.get(url, async (res) => {
+    res.pipe(filePipe);
+    callback(new Date().toISOString());
+  });
 };
 
 export class ImagesService extends Queue {
@@ -47,11 +51,36 @@ export class ImagesService extends Queue {
       fs.mkdirSync(path.join(__dirname, "..", "..", "static", "images"));
     }
 
-    const filename = path.resolve(dir, `${Date.now()}.jpg`);
+    const saveDir = path.resolve(dir, `${Date.now()}.jpg`);
 
-    this.pushTask(() => downloadImage(url, filename));
-    this.images.push({ id: imageId });
+    this.pushTask(() =>
+      downloadImage(url, saveDir, (downloadDate: string) =>
+        this.updateImage(imageId, {
+          isDownloaded: true,
+          downloadedAt: downloadDate,
+        })
+      )
+    );
+
+    this.images.push({
+      id: imageId,
+      sourceUrl: url,
+      downloadUrl: saveDir,
+      createdAt: new Date().toISOString(),
+      downloadedAt: null,
+      isDownloaded: false,
+    });
 
     return imageId;
+  }
+
+  private updateImage(imageId: string, newImage: ImageInput) {
+    const imageIndex = this.images.findIndex((image) => image.id === imageId);
+    const oldImage = this.images[imageIndex];
+
+    this.images[imageIndex] = {
+      ...oldImage,
+      ...newImage,
+    };
   }
 }
