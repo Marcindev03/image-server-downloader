@@ -1,7 +1,11 @@
 import express from "express";
-import { addImage } from "./imagesController";
+import { addImage, getImage, getImagesList } from "./imagesController";
 
 const router = express.Router();
+
+router.get("/", getImagesList);
+
+router.get("/:id", getImage);
 
 router.post("/", addImage);
 

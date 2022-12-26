@@ -9,20 +9,49 @@ const downloadImage = async (url: string, dir: string) => {
   https.get(url, (res) => res.pipe(filePipe));
 };
 
-export const pushImageToDownloadQueue = async (url: string) => {
-  const imageId = Date.now();
-
-  const dir = path.resolve(
-    __dirname,
-    "..",
-    "..",
-    "static",
-    "images",
-    `${imageId}.jpg`
-  );
-  const queue = Queue.getInstance();
-
-  queue.pushTask(() => downloadImage(url, dir));
-
-  return imageId;
+type Image = {
+  id: string;
 };
+
+export class ImagesService extends Queue {
+  private static instance: ImagesService;
+  private images: Image[] = [];
+
+  private constructor() {
+    super();
+  }
+
+  public static getInstance(): ImagesService {
+    if (!ImagesService.instance) {
+      ImagesService.instance = new ImagesService();
+    }
+
+    return ImagesService.instance;
+  }
+
+  public getImagesList() {}
+
+  public getImageDetails(imageId: string) {
+    console.log(this.images);
+
+    return this.images.find(({ id }) => id === imageId);
+  }
+
+  public pushImage(url: string) {
+    const imageId = Date.now().toString();
+
+    const dir = path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "static",
+      "images",
+      `${imageId}.jpg`
+    );
+
+    this.pushTask(() => downloadImage(url, dir));
+    this.images.push({ id: imageId });
+
+    return imageId;
+  }
+}
