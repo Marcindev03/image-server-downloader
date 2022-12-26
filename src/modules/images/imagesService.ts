@@ -44,14 +44,15 @@ export class ImagesService extends Queue {
   public pushImage(url: string) {
     const imageId = Date.now().toString();
 
-    const dir = path.resolve(__dirname, "..", "..", "static", "images");
+    const dir = path.resolve(__dirname, "..", "..", "static");
 
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(path.join(__dirname, "..", "..", "static"));
-      fs.mkdirSync(path.join(__dirname, "..", "..", "static", "images"));
     }
 
-    const saveDir = path.resolve(dir, `${Date.now()}.jpg`);
+    const filename = `${Date.now()}.jpg`;
+
+    const saveDir = path.resolve(dir, filename);
 
     this.pushTask(() =>
       downloadImage(url, saveDir, (downloadDate: string) =>
@@ -65,7 +66,7 @@ export class ImagesService extends Queue {
     this.images.push({
       id: imageId,
       sourceUrl: url,
-      downloadUrl: saveDir,
+      downloadUrl: `localhost:8000/public/${filename}`,
       createdAt: new Date().toISOString(),
       downloadedAt: null,
       isDownloaded: false,
