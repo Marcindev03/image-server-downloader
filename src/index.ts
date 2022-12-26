@@ -1,8 +1,12 @@
 import express from "express";
 
+import imagesRouter from "./modules/images/imagesRouter";
+
 const app = express();
 
-app.get("/", (req, res) => res.send("hello world"));
+app.use(express.json());
+
+app.use("/images", imagesRouter);
 
 const port = 8000;
 
