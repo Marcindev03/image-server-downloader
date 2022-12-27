@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import https from "https";
 import { Queue } from "../queue/queue";
-import { CustomPrismaClient } from "../database/prisma";
+import { prisma } from "../database/prisma";
 
 const downloadImage = async (
   url: string,
@@ -18,68 +18,49 @@ const downloadImage = async (
   });
 };
 
-export class ImagesService extends Queue {
-  private static instance: ImagesService;
+const saveImageToDb = async (url: string, filename: string) => {
+  const downloadUrl = `localhost:8000/public/${filename}`;
+  const { id } = await prisma.image.create({
+    data: {
+      isDownloaded: false,
+      sourceUrl: url,
+      createdAt: new Date(),
+      downloadUrl,
+    },
+  });
 
-  private constructor() {
-    super();
+  return id;
+};
+
+export const fetchImagesList = async () => await prisma.image.findMany();
+
+export const fetchImageDetails = async (iamgeId: number) =>
+  await prisma.image.findUnique({ where: { id: iamgeId } });
+
+export const pushImage = async (url: string) => {
+  const dir = path.resolve(__dirname, "..", "..", "static");
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(path.join(__dirname, "..", "..", "static"));
   }
 
-  public static getInstance(): ImagesService {
-    if (!ImagesService.instance) {
-      ImagesService.instance = new ImagesService();
-    }
+  const filename = `${Date.now()}.jpg`;
+  const saveDir = path.resolve(dir, filename);
 
-    return ImagesService.instance;
-  }
+  const imageId = await saveImageToDb(url, filename);
 
-  public async getImagesList() {
-    const prisma = CustomPrismaClient.getInstance();
+  const queue = Queue.getInstance();
 
-    const images = await prisma.image.findMany();
+  queue.pushTask(() =>
+    downloadImage(url, saveDir, async (downloadDate: string) => {
+      await prisma.image.update({
+        data: { isDownloaded: true, downloadedAt: downloadDate },
+        where: {
+          id: imageId,
+        },
+      });
+    })
+  );
 
-    return images;
-  }
-
-  public async getImageDetails(imageId: string) {
-    const prisma = CustomPrismaClient.getInstance();
-
-    return await prisma.image.findUnique({ where: { id: +imageId } });
-  }
-
-  public async pushImage(url: string) {
-    const prisma = CustomPrismaClient.getInstance();
-
-    const dir = path.resolve(__dirname, "..", "..", "static");
-
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(path.join(__dirname, "..", "..", "static"));
-    }
-
-    const filename = `${Date.now()}.jpg`;
-
-    const saveDir = path.resolve(dir, filename);
-
-    const { id } = await prisma.image.create({
-      data: {
-        isDownloaded: false,
-        sourceUrl: url,
-        createdAt: new Date(),
-        downloadUrl: saveDir,
-      },
-    });
-
-    this.pushTask(() =>
-      downloadImage(url, saveDir, async (downloadDate: string) => {
-        await prisma.image.update({
-          data: { isDownloaded: true, downloadedAt: downloadDate },
-          where: {
-            id,
-          },
-        });
-      })
-    );
-
-    return id;
-  }
-}
+  return imageId;
+};

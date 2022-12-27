@@ -1,15 +1,13 @@
 import { Request, Response, NextFunction } from "express";
-import { ImagesService } from "./imagesService";
+import { fetchImagesList, fetchImageDetails, pushImage } from "./imagesService";
 
 export const getImagesList = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const imagesService = ImagesService.getInstance();
-
   try {
-    const imagesList = await imagesService.getImagesList();
+    const imagesList = await fetchImagesList();
 
     res.json({
       imagesList,
@@ -27,11 +25,10 @@ export const getImage = async (
   res: Response,
   next: NextFunction
 ) => {
-  const imagesService = ImagesService.getInstance();
   const { id } = req.params;
 
   try {
-    const imageDetails = await imagesService.getImageDetails(id);
+    const imageDetails = await fetchImageDetails(parseInt(id));
 
     if (!imageDetails) {
       res.status(404);
@@ -54,11 +51,10 @@ export const addImage = async (
   res: Response,
   next: NextFunction
 ) => {
-  const imagesService = ImagesService.getInstance();
   const { url } = req.body;
 
   try {
-    const imageId = await imagesService.pushImage(url);
+    const imageId = await pushImage(url);
 
     res.json({
       url: `localhost:8000/images/${imageId}`,
