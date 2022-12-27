@@ -2,24 +2,24 @@ import fs from "fs";
 import path from "path";
 import https from "https";
 import { Queue } from "../queue/queue";
-import { Image, ImageInput } from "../../types/image";
+import { CustomPrismaClient } from "../database/prisma";
 
 const downloadImage = async (
   url: string,
   dir: string,
-  callback: (downloadDate: string) => void
+  callback: (downloadDate: string) => Promise<void>
 ) => {
   const filePipe = fs.createWriteStream(dir);
 
   https.get(url, async (res) => {
-    res.pipe(filePipe);
-    callback(new Date().toISOString());
+    const stream = res.pipe(filePipe);
+
+    stream.on("finish", async () => await callback(new Date().toISOString()));
   });
 };
 
 export class ImagesService extends Queue {
   private static instance: ImagesService;
-  private images: Image[] = [];
 
   private constructor() {
     super();
@@ -33,16 +33,22 @@ export class ImagesService extends Queue {
     return ImagesService.instance;
   }
 
-  public getImagesList() {
-    return this.images;
+  public async getImagesList() {
+    const prisma = CustomPrismaClient.getInstance();
+
+    const images = await prisma.image.findMany();
+
+    return images;
   }
 
-  public getImageDetails(imageId: string) {
-    return this.images.find(({ id }) => id === imageId);
+  public async getImageDetails(imageId: string) {
+    const prisma = CustomPrismaClient.getInstance();
+
+    return await prisma.image.findUnique({ where: { id: +imageId } });
   }
 
-  public pushImage(url: string) {
-    const imageId = Date.now().toString();
+  public async pushImage(url: string) {
+    const prisma = CustomPrismaClient.getInstance();
 
     const dir = path.resolve(__dirname, "..", "..", "static");
 
@@ -54,34 +60,26 @@ export class ImagesService extends Queue {
 
     const saveDir = path.resolve(dir, filename);
 
-    this.pushTask(() =>
-      downloadImage(url, saveDir, (downloadDate: string) =>
-        this.updateImage(imageId, {
-          isDownloaded: true,
-          downloadedAt: downloadDate,
-        })
-      )
-    );
-
-    this.images.push({
-      id: imageId,
-      sourceUrl: url,
-      downloadUrl: `localhost:8000/public/${filename}`,
-      createdAt: new Date().toISOString(),
-      downloadedAt: null,
-      isDownloaded: false,
+    const { id } = await prisma.image.create({
+      data: {
+        isDownloaded: false,
+        sourceUrl: url,
+        createdAt: new Date(),
+        downloadUrl: saveDir,
+      },
     });
 
-    return imageId;
-  }
+    this.pushTask(() =>
+      downloadImage(url, saveDir, async (downloadDate: string) => {
+        await prisma.image.update({
+          data: { isDownloaded: true, downloadedAt: downloadDate },
+          where: {
+            id,
+          },
+        });
+      })
+    );
 
-  private updateImage(imageId: string, newImage: ImageInput) {
-    const imageIndex = this.images.findIndex((image) => image.id === imageId);
-    const oldImage = this.images[imageIndex];
-
-    this.images[imageIndex] = {
-      ...oldImage,
-      ...newImage,
-    };
+    return id;
   }
 }

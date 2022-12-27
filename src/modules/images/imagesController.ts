@@ -9,7 +9,7 @@ export const getImagesList = async (
   const imagesService = ImagesService.getInstance();
 
   try {
-    const imagesList = imagesService.getImagesList();
+    const imagesList = await imagesService.getImagesList();
 
     res.json({
       imagesList,
@@ -31,7 +31,7 @@ export const getImage = async (
   const { id } = req.params;
 
   try {
-    const imageDetails = imagesService.getImageDetails(id);
+    const imageDetails = await imagesService.getImageDetails(id);
 
     if (!imageDetails) {
       res.status(404);
@@ -58,7 +58,7 @@ export const addImage = async (
   const { url } = req.body;
 
   try {
-    const imageId = imagesService.pushImage(url);
+    const imageId = await imagesService.pushImage(url);
 
     res.json({
       url: `localhost:8000/images/${imageId}`,

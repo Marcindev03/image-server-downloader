@@ -9,9 +9,11 @@
     "dev": "concurrently \"tsc -w\" \"nodemon ./dist/index.js\""
   },
   "dependencies": {
+    "@prisma/client": "^4.8.0",
     "async": "^3.2.4",
     "compression": "^1.7.4",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "prisma": "^4.8.0"
   },
   "devDependencies": {
     "@types/async": "^3.2.16",
