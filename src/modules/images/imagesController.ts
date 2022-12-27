@@ -17,6 +17,7 @@ export const getImagesList = async (
       res.json({
         message: "Page doesn't exist",
       });
+      return;
     }
 
     res.json({
