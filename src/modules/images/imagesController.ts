@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { URL_REGEX } from "../../utils/helpers";
 import { fetchImagesList, fetchImageDetails, pushImage } from "./imagesService";
 
 export const getImagesList = async (
@@ -33,7 +34,7 @@ export const getImage = async (
     if (!imageDetails) {
       res.status(404);
       res.json({
-        message: "Not found",
+        message: "Image not found",
       });
     }
 
@@ -51,8 +52,15 @@ export const addImage = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { url } = req.body;
+  const { url } = req.body as { url: string };
 
+  if (!URL_REGEX.test(url)) {
+    res.status(404);
+    res.json({
+      message: "Bad url adress",
+    });
+    return;
+  }
   try {
     const imageId = await pushImage(url);
 

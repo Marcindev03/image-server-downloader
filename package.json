@@ -5,13 +5,15 @@
   "license": "MIT",
   "scripts": {
     "build": "rimraf ./dist && tsc",
-    "start": "node ./dist/index.js",
+    "start": "cross-env NODE_ENV=\"production\" node ./dist/index.js",
     "dev": "concurrently \"tsc -w\" \"nodemon ./dist/index.js\""
   },
   "dependencies": {
     "@prisma/client": "^4.8.0",
     "async": "^3.2.4",
     "compression": "^1.7.4",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "prisma": "^4.8.0"
   },

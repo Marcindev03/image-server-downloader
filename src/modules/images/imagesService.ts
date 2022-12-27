@@ -19,7 +19,7 @@ const downloadImage = async (
 };
 
 const saveImageToDb = async (url: string, filename: string) => {
-  const downloadUrl = `localhost:8000/public/${filename}`;
+  const downloadUrl = `${process.env.DOMAIN_NAME}/public/${filename}`;
   const { id } = await prisma.image.create({
     data: {
       isDownloaded: false,

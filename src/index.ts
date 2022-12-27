@@ -1,5 +1,8 @@
 import express from "express";
 import compression from "compression";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 import imagesRouter from "./modules/images/imagesRouter";
 
@@ -12,6 +15,6 @@ app.use("/public", express.static("dist/static"));
 
 app.use("/images", imagesRouter);
 
-const port = 8000;
+const port = process.env.PORT || 8000;
 
 app.listen(port, () => console.log(`App is running on port ${port}`));
