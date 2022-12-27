@@ -3,6 +3,7 @@ import path from "path";
 import https from "https";
 import { Queue } from "../queue/queue";
 import { prisma } from "../database/prisma";
+import { PAGE_SIZE } from "../../utils/helpers";
 
 const downloadImage = async (
   url: string,
@@ -32,7 +33,20 @@ const saveImageToDb = async (url: string, filename: string) => {
   return id;
 };
 
-export const fetchImagesList = async () => await prisma.image.findMany();
+export const fetchImagesList = async (page: number) => {
+  const [totalImages, images] = await prisma.$transaction([
+    prisma.image.count(),
+    prisma.image.findMany({
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  return {
+    totalPages: Math.floor(totalImages / PAGE_SIZE),
+    images,
+  };
+};
 
 export const fetchImageDetails = async (iamgeId: number) =>
   await prisma.image.findUnique({ where: { id: iamgeId } });

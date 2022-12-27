@@ -7,8 +7,17 @@ export const getImagesList = async (
   res: Response,
   next: NextFunction
 ) => {
+  const { page } = req.query;
+
   try {
-    const imagesList = await fetchImagesList();
+    const imagesList = await fetchImagesList(parseFloat(page as string));
+
+    if (+(page as string) > imagesList.totalPages) {
+      res.status(404);
+      res.json({
+        message: "Page doesn't exist",
+      });
+    }
 
     res.json({
       imagesList,
